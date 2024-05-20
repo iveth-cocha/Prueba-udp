@@ -5,7 +5,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 class HiloCliente extends Thread {
+    //crear variable para el puerto
     private int puerto;
+
+    //arreglo para almacenar las preguntas y la respuesta
     private Map<String, String> preguntas;
 
     public HiloCliente(int puerto) {
@@ -14,7 +17,7 @@ class HiloCliente extends Thread {
         this.preguntas.put("Pais más grande", "Rusia");
         this.preguntas.put("Película en que el barco se hunde por un glaciar", "Titanic");
         this.preguntas.put("Tiburón prehistórico", "Megalodon");
-        this.preguntas.put("Ave que renace de las cenizas", "Fénix");
+        this.preguntas.put("Ave que renace de las cenizas", "Fenix");
         this.preguntas.put("Religión predominante en México", "Catolicismo");
     }
 
@@ -22,7 +25,7 @@ class HiloCliente extends Thread {
     public void run() {
         try {
             DatagramSocket socket = new DatagramSocket(puerto);
-
+            //mesnaje para ver la conexion
             System.out.println("Esperando la conexión del cliente...");
 
             while (true) {
@@ -30,13 +33,14 @@ class HiloCliente extends Thread {
                 DatagramPacket paqueteEntrada = new DatagramPacket(bufferEntrada, bufferEntrada.length);
                 socket.receive(paqueteEntrada);
 
+                //obtener la direccion del cliente
                 InetAddress direccionCliente = paqueteEntrada.getAddress();
                 int puertoCliente = paqueteEntrada.getPort();
                 
                 System.out.println("Conexión establecida con el cliente en la dirección IP: " + direccionCliente.getHostAddress());
 
                 int puntajeTotal = 0;
-
+                //evaluar las preguntas
                 for (Map.Entry<String, String> entry : preguntas.entrySet()) {
                     String pregunta = entry.getKey();
                     String respuestaCorrecta = entry.getValue();

@@ -6,9 +6,10 @@ import java.util.Map;
 
 public class servidor {
     public static void main(String[] args) {
+        //establecer puerto
         int puerto = 5000;
 
-        // Crear instancia de HiloCliente y ejecutarlo
+        // inicializar el HiloCliente
         HiloCliente hiloCliente = new HiloCliente(puerto);
         hiloCliente.start();
     }

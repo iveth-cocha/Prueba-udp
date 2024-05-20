@@ -7,6 +7,7 @@ public class cliente {
     public static void main(String[] args) {
         try {
             DatagramSocket socket = new DatagramSocket();
+                                            //cambiar dependiendo la IP del servidor
             InetAddress direccionServidor = InetAddress.getByName("localhost");
             int puertoServidor = 5000;
             Scanner scanner = new Scanner(System.in);
