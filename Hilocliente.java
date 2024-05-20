@@ -1,52 +1,84 @@
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 
-public class Hilocliente extends Thread {
-    private DatagramSocket socket;
-    private InetAddress direccionServidor;
-    private int puertoServidor;
+class HiloCliente extends Thread {
+    private int puerto;
     private Map<String, String> preguntas;
-    private Random random;
 
-    public Hilocliente(DatagramSocket socket, InetAddress direccionServidor, int puertoServidor, Map<String, String> preguntas) {
-        this.socket = socket;
-        this.direccionServidor = direccionServidor;
-        this.puertoServidor = puertoServidor;
-        this.preguntas = preguntas;
-        this.random = new Random();
+    public HiloCliente(int puerto) {
+        this.puerto = puerto;
+        this.preguntas = new HashMap<>();
+        this.preguntas.put("Pais más grande", "Rusia");
+        this.preguntas.put("Película en que el barco se hunde por un glaciar", "Titanic");
+        this.preguntas.put("Tiburón prehistórico", "Megalodon");
+        this.preguntas.put("Ave que renace de las cenizas", "Fénix");
+        this.preguntas.put("Religión predominante en México", "Catolicismo");
     }
 
     @Override
     public void run() {
         try {
-            for (Map.Entry<String, String> entry : preguntas.entrySet()) {
-                String preguntas = entry.getKey();
-                String respuestaCorrecta = entry.getValue();
+            DatagramSocket socket = new DatagramSocket(puerto);
 
-                // Recibir pregunta del servidor
-                byte[] bufferPregunta = new byte[1024];
-                DatagramPacket paquetePregunta = new DatagramPacket(bufferPregunta, bufferPregunta.length);
-                socket.receive(paquetePregunta);
-                String preguntaRecibida = new String(paquetePregunta.getData(), 0, paquetePregunta.getLength());
-                System.out.println("Pregunta: " + preguntaRecibida);
+            System.out.println("Esperando la conexión del cliente...");
 
-                // Enviar respuesta al servidor
-                String respuesta = obtenerRespuestaAleatoria();
-                byte[] bufferRespuesta = respuesta.getBytes();
-                DatagramPacket paqueteRespuesta = new DatagramPacket(bufferRespuesta, bufferRespuesta.length, direccionServidor, puertoServidor);
-                socket.send(paqueteRespuesta);
-                System.out.println("Respuesta enviada: " + respuesta);
+            while (true) {
+                byte[] bufferEntrada = new byte[1024];
+                DatagramPacket paqueteEntrada = new DatagramPacket(bufferEntrada, bufferEntrada.length);
+                socket.receive(paqueteEntrada);
+
+                InetAddress direccionCliente = paqueteEntrada.getAddress();
+                int puertoCliente = paqueteEntrada.getPort();
+                
+                System.out.println("Conexión establecida con el cliente en la dirección IP: " + direccionCliente.getHostAddress());
+
+                int puntajeTotal = 0;
+
+                for (Map.Entry<String, String> entry : preguntas.entrySet()) {
+                    String pregunta = entry.getKey();
+                    String respuestaCorrecta = entry.getValue();
+
+                    // Enviar pregunta al cliente
+                    byte[] bufferPregunta = pregunta.getBytes();
+                    DatagramPacket paquetePregunta = new DatagramPacket(bufferPregunta, bufferPregunta.length, direccionCliente, puertoCliente);
+                    socket.send(paquetePregunta);
+
+                    // Recibir respuesta del cliente
+                    byte[] bufferRespuesta = new byte[1024];
+                    DatagramPacket paqueteRespuesta = new DatagramPacket(bufferRespuesta, bufferRespuesta.length);
+                    socket.receive(paqueteRespuesta);
+                    String respuesta = new String(paqueteRespuesta.getData(), 0, paqueteRespuesta.getLength());
+
+                    // Verificar respuesta
+                    String mensajeSalida;
+                    if (respuesta.trim().equalsIgnoreCase(respuestaCorrecta)) {
+                        mensajeSalida = "Respuesta correcta";
+                        puntajeTotal += 4;
+                    } else {
+                        mensajeSalida = "Respuesta incorrecta. La respuesta correcta era: " + respuestaCorrecta;
+                    }
+
+                    // Enviar confirmación al cliente
+                    byte[] bufferSalida = mensajeSalida.getBytes();
+                    DatagramPacket paqueteSalida = new DatagramPacket(bufferSalida, bufferSalida.length, direccionCliente, puertoCliente);
+                    socket.send(paqueteSalida);
+                }
+
+                // Enviar puntaje final al cliente
+                String puntajeFinal = "Puntaje final: " + puntajeTotal;
+                byte[] bufferPuntaje = puntajeFinal.getBytes();
+                DatagramPacket paquetePuntaje = new DatagramPacket(bufferPuntaje, bufferPuntaje.length, direccionCliente, puertoCliente);
+                socket.send(paquetePuntaje);
+
+                System.out.println("Puntaje final enviado al cliente: " + puntajeTotal);
+
+                socket.close();
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    private String obtenerRespuestaAleatoria() {
-        String[] respuestasArray = preguntas.values().toArray(new String[0]);
-        return respuestasArray[random.nextInt(respuestasArray.length)];
     }
 }
